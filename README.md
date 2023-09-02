@@ -56,4 +56,4 @@ The choice of Generative AI models for AfyaMumBot is driven by the need for high
 
 - **Efficiency**: Generative AI models offer quick and automated responses, ensuring users receive information promptly.
 
-In summary, AfyaMumBot's choice of Generative AI models, including GPT-3.5 LLM, is driven by a commitment to providing expectant mothers with accurate, personalized, and timely information and support throughout their pregnancy journey. The Whatsapp bot w
+In summary, AfyaMumBot's choice of Generative AI models, including GPT-3.5 LLM, is driven by a commitment to providing expectant mothers with accurate, personalized, and timely information and support throughout their pregnancy journey. The Whatsapp bot won't require a UI as we'll be integrating our chatbot with Whatsapp messenger.
