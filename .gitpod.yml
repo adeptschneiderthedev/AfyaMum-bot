@@ -1,0 +1,58 @@
+# .gitpod.yml
+
+# Specify the Docker image for the Gitpod workspace.
+# You may choose an image that suits your requirements.
+# In this example, we use the default image.
+image: gitpod/workspace-full
+
+# List additional GitHub repositories that should be prebuilt and available in the workspace.
+# You can add repositories you depend on or need for your development work.
+# Example:
+# prebuilds:
+#   - repo: yourusername/yourdependencyrepo
+
+# Specify environment variables that should be available in the Gitpod workspace.
+# You can define secrets or other configuration values here.
+# Example:
+# env:
+#   MY_SECRET_KEY: "yoursecretvalue"
+
+# Specify any commands that should be run when the workspace is created.
+# You can use this section to set up your development environment.
+# Example:
+tasks:
+  - name: Install Miniconda and Packages
+    command: |
+      curl https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -o Miniconda3-latest-Linux-x86_64.sh
+      chmod +x Miniconda3-latest-Linux-x86_64.sh
+      ./Miniconda3-latest-Linux-x86_64.sh -b -p /workspace/miniconda3
+      export PATH=$PATH:/workspace/miniconda3/bin
+      conda --version
+      conda install -p /workspace/AfyaMum-bot/.conda ipykernel --update-deps --force-reinstall
+      conda install openai
+      conda install python-dotenv
+      conda install langchain
+
+# Specify ports to expose for previewing your application.
+# Example:
+# ports:
+#   - port: 3000
+#     onOpen: open-preview
+
+# Configure additional options, if needed.
+# Example:
+# editor:
+#   font-size: 14
+#   extensions:
+#     - yourusername/extension3
+
+# Autostart tasks when the workspace is created.
+# You can define tasks that should run automatically when the workspace starts.
+# Example:
+# onOpen: npm start
+
+# You can also specify additional settings for your workspace.
+# Example:
+# endpoints:
+#   - name: Custom Endpoint
+#     url: https://custom-endpoint.example.com
