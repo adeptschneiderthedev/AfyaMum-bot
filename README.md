@@ -17,7 +17,7 @@ The repository is structured as follows:
 
  THe purpose of this repository is to provide a collaborative space for the development and improvement of AfyaMUmBot. 
 
- ## How Generative AI MOdels are solving the problem
+ ## How Generative AI Models are solving the problem
 
  AfyaMumBot leverages Generative AI Models to provide personalized information and support to expectant mothers throughout their pregnancy journey.
 
