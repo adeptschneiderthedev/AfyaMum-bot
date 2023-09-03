@@ -1,21 +1,53 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Form, Depends, Request
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
 from pydantic import BaseModel
-from utils import generate_description
-from dotenv import load_dotenv, find_dotenv
-from utils import generate_response
+from decouple import config
 
-_ = load_dotenv(find_dotenv())
+
+# Internal imports
+from models import Conversation, SessionLocal
+from utils import generate_response, send_message, logger
+
 
 app = FastAPI()
 
-_ = load_dotenv(find_dotenv())
+
+# Dependency
+def get_db():
+    try:
+        db = SessionLocal()
+        yield db
+    finally:
+        db.close()
 
 
-class Prompt(BaseModel):
-    prompt: str
+@app.get("/")
+async def index():
+    return {"msg": "working"}
 
+@app.post("/message")
+async def reply(request: Request, Body: str = Form(), db: Session = Depends(get_db)):
+    # Extract the phone number from the incoming webhook request
+    form_data = await request.form()
+    whatsapp_number = form_data['From'].split("whatsapp:")[-1]
+    print(f"Sending the AfyaMum bot's response to this number: {whatsapp_number}")
 
-@app.post("/afyamumbot/generate/")
-async def generate(prompt: Prompt):
-    description = generate_response(prompt.prompt)
-    return description
+    # Make inference using AfyaMumBot model
+    response = generate_response(Body)
+
+    # Store the conversation in the database
+    try:
+        conversation = Conversation(
+            sender=whatsapp_number,
+            message=Body,
+            response=response
+            )
+        db.add(conversation)
+        db.commit()
+        logger.info(f"Conversation #{conversation.id} stored in database")
+    except SQLAlchemyError as e:
+        db.rollback()
+        logger.error(f"Error storing conversation in database: {e}")
+    send_message(whatsapp_number, response)
+    return ""

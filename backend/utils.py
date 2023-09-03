@@ -1,35 +1,82 @@
+# Twilio Whatsapp utility package imports
+
+# Standard library imports
+import logging
+import param, textwrap, os, datetime
+
+# Third party imports
+from twilio.rest import Client
+from decouple import config
+import openai
+
+# Chatbot imports
 from langchain.chains import ConversationalRetrievalChain
 from langchain.chat_models import ChatOpenAI
-# from langchain.embeddings import HuggingFaceEmbeddings
 from langchain import PromptTemplate
 from langchain.vectorstores import FAISS
 from InstructorEmbedding import INSTRUCTOR
 from langchain.embeddings import HuggingFaceInstructEmbeddings
 
+# Set up the OpenAI API client, Langchain smith
+openai.api_key = config("OPENAI_API_KEY")
+langchain_tracing_v2 = config('LANGCHAIN_TRACING_V2')
+langchain_endpoint = config('LANGCHAIN_ENDPOINT')
+langchain_api_key = config('LANGCHAIN_API_KEY')
+
+
+current_date = datetime.datetime.now().date()
+if current_date < datetime.date(2023, 9, 2):
+    llm_name = "gpt-3.5-turbo-0301"
+else:
+    llm_name = "gpt-3.5-turbo"
+print(llm_name)
+
+
+# Find your Account SID and Auth Token at twilio.com/console
+# and set the environment variables. See http://twil.io/secure
+account_sid = config("TWILIO_ACCOUNT_SID")
+auth_token = config("TWILIO_AUTH_TOKEN")
+client = Client(account_sid, auth_token)
+twilio_number = config('TWILIO_NUMBER')
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Sending message logic through Twilio Messaging API
+def send_message(to_number, body_text):
+    try:
+        message = client.messages.create(
+            from_=f"whatsapp:{twilio_number}",
+            body=body_text,
+            to=f"whatsapp:{to_number}"
+            )
+        logger.info(f"Message sent to {to_number}: {message.body}")
+    except Exception as e:
+        logger.error(f"Error sending message to {to_number}: {e}")
+
+
+
 DB_FAISS_PATH = '../vectorstore/db_faiss'
 
-custom_prompt_template = """Use the following pieces of information to answer the user's question in a simple manner which will enable him or her to easily understand.
-Limit the response to 250 words.
-If you don't know the answer, just say that you don't know, don't try to make up an answer.
+custom_prompt_template = """
+Provide the user with clear and concise information, limited to 250 words, to ensure easy understanding. If you don't have the answer, please state that you don't know rather than attempting to provide inaccurate information.
 
-Context: {context}
-Question: {question}
+**Question**: {question}
 
-Only return the helpful answer, risk level e.g high, medium or low risk, and possible remedies if low risk involved
-below and nothing else.
-Helpful answer for expectant mothers:
+For expectant mothers, please provide the following:
 
-Symptom Assessment: Provide an assessment of the symptoms described in the query.
+**Symptom Assessment**: Offer an assessment of the symptoms described in the query.
 
-Risk Evaluation: Evaluate the potential risks and complications expectant mothers may be predisposed to based on the conditions presented in the query.
+**Risk Evaluation**: Evaluate potential risks and complications that expectant mothers may face based on the conditions presented in the query.
 
-Personalized Guidance: Offer recommended actions, preventive measures, and self-care tips tailored to the user's specific situation.
+**Personalized Guidance**: Suggest recommended actions, preventive measures, and self-care tips tailored to the user's specific situation.
 
-Specialist Referral: Indicate whether specialized medical attention may be needed and, if so, provide guidance on seeking such care.
+**Specialist Referral**: Specify whether specialized medical attention may be necessary and, if so, provide guidance on how to seek such care.
 
-Risk Level: Assess the risk level associated with the symptoms or conditions mentioned (e.g., high, medium, or low risk).
+**Risk Level**: Assess the risk level associated with the symptoms or conditions mentioned (e.g., high, medium, or low risk).
 
-Possible Remedies (for Low Risk): If the risk level is low, suggest appropriate remedies or self-care steps.
+**Possible Remedies (for Low Risk)**: If the risk level is determined to be low, suggest appropriate remedies or self-care steps.
 """
 
 def set_custom_prompt():
@@ -55,9 +102,7 @@ def conversational_retrieval_chain(llm, prompt, db, k, chain_type):
     )
     return qa 
 
-import param, textwrap
-
-class cbfs(param.Parameterized):
+class AfyaMumbot(param.Parameterized):
     chat_history = param.List([])
     answer = param.String("")
     db_query = param.String("")
@@ -65,7 +110,7 @@ class cbfs(param.Parameterized):
 
     def __init__(self, **params):
         super(cbfs, self).__init__(**params)
-        llm = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0)
+        llm = ChatOpenAI(model_name=llm_name, temperature=0.5)
         prompt = set_custom_prompt()
         # embeddings = HuggingFaceEmbeddings(model_name='sentence-transformers/all-MiniLM-L6-v2', model_kwargs={'device': 'cpu'})
         embeddings = HuggingFaceInstructEmbeddings(model_name="hkunlp/instructor-xl", model_kwargs={"device": "cpu"})
@@ -84,5 +129,5 @@ class cbfs(param.Parameterized):
         return self.answer
     
 def generate_response(query):
-    cb = cbfs()
+    cb = AfyaMumbot()
     return cb.convchain(query)
